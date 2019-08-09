@@ -88,7 +88,7 @@ namespace Academy.Cs.Challenges
         [DataRow(3, new int[] { 1, 3 }, DisplayName = "Two values")]
         [DataRow(11, new int[] { 0, 1, 2, 3, 4, 5, 5 }, DisplayName = "Increasing values")]
         [DataTestMethod]
-        public void TestGet(int result, int[] values)
+        public void MaxSumNonAdjacentGet(int result, int[] values)
         {
             Assert.AreEqual(result, MaxSumNonAdjacent.Get(values));
         }
