@@ -20,7 +20,7 @@ Send, {ENTER}{ENTER}+{TAB}+{TAB}
 return
 
 ; CTRL+SHIFT+H
-; Sends a random 8-character alpha-numeric string.
+; Sends a random 8-character alphanumeric string.
 ^+h::
 loop 8
 {
