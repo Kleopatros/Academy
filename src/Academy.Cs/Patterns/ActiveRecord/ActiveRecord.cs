@@ -1,29 +1,78 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace Academy.Cs.Patterns.ActiveRecord
 {
-    public interface IDataStore // TODO
+    public interface IRecordStore // TODO
     {
-        bool Save(IDataStorable model);
+        bool Save(IRecordStorable model);
     }
 
-    public interface IDataStorable // TODO
+    public interface IRecordStorable // TODO
     {
         // TODO: Schema { get; }
     }
 
+
+
+    //https://guides.rubyonrails.org/active_model_basics.html
+    //https://guides.rubyonrails.org/active_record_basics.html
+    //https://api.rubyonrails.org/v3.1/classes/ActiveResource/Base.html
+    //ActiveModel: This component was created in Rails 3. They took all the model related parts that did not have a database requirement of Rails 2 ActiveRecord and moved it into ActiveModel.So ActiveModel includes things like validations.More information: http://www.rubyinside.com/rails-3-0s-activemodel-how-to-give-ruby-classes-some-activerecord-magic-2937.html
+    // ActiveRecord: This is the component that associates a class to the database.This will give the class functionality such as methods that make it easy to pull records from the database(An example is the find method).
+
+    //ActiveResource: Similar to ActiveRecord.However, instead of being backed by a database, an ActiveResource object is backed by another application through a web service API.More information: http://ofps.oreilly.com/titles/9780596521424/activeresource_id59243.html
+
+    //    ActiveListener - used to setup dependency nodes across one or more ActiveModels(many to many sources and consumers?), inherit to provide specific functionality.Like some metaobject could add settings objects as they are made and set a boolean indicating a certain computaiton is now invalid.
+    //ActiveMessenger: a better decoupled approach to the above:
+    //FinancialComputationMessenger
+    // const string SomethingChanged;
+    //    bool HasComputationInputChanged;
+    //    Who owns this object; if its another model, how is it better than a Listener?
+
+    //    Don't make models trees; use graphs and allow Register to accept an argument stating if the registerer is the responsible owner of the registeree
+
+
+    //DataModel   - instead of this, what if the model just has no backing source? how to make a lightweight version, is it possible?
+    //ActiveModel
+    //DataModel.Validator(static?)
+    //DataModel.Schema
+    //DataModel.Serializer
+
+    //ObservableCollection<T> is OK, but should the super be watching this or the sub?
+
+    //moved changed notivation to inside read lock? lookup advice for raising events inside locks - also consider advice for what to do and what not to do inside event handlers.just like claling aproperty shouldn't be heavy weight
+
+    //use graph and find way to decouple associations. note you may have associations but you may also have subdata (e.g. and array of points). the former must be decoupled, but both must be optionally loaded into memory.
+
+    ////    active record to be reused by front end -- NO
+    ////use composition on the validator.what about the model? could do that to, but props would be duplicated and complicates your get/set
+    ////https://docs.microsoft.com/en-us/dotnet/architecture/microservices/microservice-ddd-cqrs-patterns/domain-model-layer-validations
+    ////you can still use your active record, but it should not have a IDataStore connection, instead it should raise an event when it wants to save, or maybe a savable extension (Model is base, ActiveModel is a savable subclass).
+
+
     // TODO: https://en.wikipedia.org/wiki/Active_record_pattern
-    public abstract class ActiveRecord : IDisposable, INotifyPropertyChanging, INotifyPropertyChanged, IDataStorable
+
+
+
+
+
+
+
+
+    /// <summary>
+    /// A thread-safe data model backed by some store (a database, file, cache, etc.).
+    /// </summary>
+    /// <remarks>
+    /// Property access is garaunteed atomic using an object-scoped <see
+    /// cref="ReaderWriterLockSlim"/>. Beware that events may be raised from within read locks,
+    /// but never a write lock.
+    /// </remarks>
+    public abstract class ActiveRecord : ActiveModel, INotifyPropertyChanging, INotifyPropertyChanged, IRecordStorable
     {
-        private readonly ReaderWriterLockSlim _dataLock = new ReaderWriterLockSlim();
-
         private readonly HashSet<string> _propertiesChanged = new HashSet<string>();
-
-        private bool _disposed;
 
         /// <summary>
         /// Initializes a new <see cref="ActiveRecord"/> instance.
@@ -40,180 +89,40 @@ namespace Academy.Cs.Patterns.ActiveRecord
         {
             this.Dispose(false);
         }
-
-        /// <summary>
-        /// Occurs when a property value is changing.
-        /// </summary>
-        public event PropertyChangingEventHandler PropertyChanging;
-
-        /// <summary>
-        /// Occurs when a property value changes.
-        /// </summary>
-        public event PropertyChangedEventHandler PropertyChanged;
         
-        // TODO: Associations, RegisterAssociation(Assocation.HasMany, ActiveRecord)
-
         /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or resetting
-        /// unmanaged resources.
+        /// Reads the record from storage, overwriting any changes that have been made to this instance.
         /// </summary>
-        public void Dispose()
-        {
-            this.Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or resetting
-        /// unmanaged resources.
-        /// </summary>
-        /// <param name="disposing">
-        /// If <c>true</c>, the method has been called directly or indirectly by a user's code.
-        /// Managed and unmanaged resources should be disposed.
-        /// 
-        /// If <c>false</c>, the method has been called by the runtime from inside the finalizer
-        /// and other objects should not be referenced. Only unmanaged resources can be disposed.
-        /// </param>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_disposed)
-            {
-                return;
-            }
-
-            try
-            {
-                if (disposing)
-                {
-                    _dataLock.Dispose();
-                }
-            }
-            finally
-            {
-                _disposed = true;
-            }
-        }
-
-        public bool IsValid
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-
-            private set
-            {
-                throw new NotImplementedException();
-            }
-        }
-
         public void Reload()
         {
+            this.ShouldNotify = false;
+
             throw new NotImplementedException();
+
+            this.ShouldNotify = true;
+            this.OnPropertyChanged(null);
         }
 
+        /// <summary>
+        /// Writes the state of this instance to storage.
+        /// </summary>
+        /// <returns>
+        /// <c>true</c> if the instance was saved successfully; <c>false</c> if the write failed
+        /// or could not be performed.
+        /// </returns>
         public bool Save()
         {
             throw new NotImplementedException();
-        }
-
-        protected virtual bool Validate()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Invoked when a property value is changing.
-        /// </summary>
-        /// <param name="propertyName">The name of the property whose value is changing.</param>
-        /// <returns>
-        /// <c>true</c> if changing the property value should continue; <c>false</c> if the
-        /// operation should be canceled.
-        /// </returns>
-        protected virtual bool OnPropertyChanging(string propertyName)
-        {
-            this.PropertyChanging?.Invoke(this, new PropertyChangingEventArgs(propertyName));
-            return true;
         }
 
         /// <summary>
         /// Invoked after a property value has changed.
         /// </summary>
         /// <param name="propertyName">The name of the property that changed.</param>
-        protected virtual void OnPropertyChanged(string propertyName)
+        protected override void OnPropertyChanged(string propertyName)
         {
             _propertiesChanged.Add(propertyName);
-            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
-        /// <summary>
-        /// Safely sets the value of a property and invokes the relevant events.
-        /// </summary>
-        /// <remarks>
-        /// It would be ideal, for simplicity, if the <see cref="Interlocked"/> class could be used
-        /// to atomically update <paramref name="field"/> if <paramref name="value"/> differs from
-        /// its existing value. However, the events surrounding the change complicate the operation.
-        /// </remarks>
-        /// <typeparam name="T">The type of the property value.</typeparam>
-        /// <param name="field">The field storing the property value.</param>
-        /// <param name="value">The value to assign the property.</param>
-        /// <param name="propertyName">The name of the property whose value is changing.</param>
-        /// <returns>
-        /// <c>true</c> if the property value has changed; <c>false</c> if the operation was
-        /// canceled or <paramref name="field"/> was already equal to <paramref name="value"/>.
-        /// </returns>
-        protected bool Set<T>(ref T field, T value, [CallerMemberName] string propertyName = "")
-        {
-            bool propertyChanged = false;
-            _dataLock.EnterUpgradeableReadLock();
-            try
-            {
-                if (!EqualityComparer<T>.Default.Equals(field, value))
-                {
-                    this.OnPropertyChanging(propertyName);
-
-                    _dataLock.EnterWriteLock();
-                    try
-                    {
-                        field = value;
-                        propertyChanged = true;
-                    }
-                    finally
-                    {
-                        _dataLock.ExitWriteLock();
-                    }
-                }
-            }
-            finally
-            {
-                _dataLock.ExitUpgradeableReadLock();
-            }
-
-            if (propertyChanged)
-            {
-                this.OnPropertyChanged(propertyName);
-            }
-
-            return propertyChanged;
-        }
-
-        /// <summary>
-        /// Safely gets the value of a property.
-        /// </summary>
-        /// <typeparam name="T">The type of the property value.</typeparam>
-        /// <param name="field">The field storing the property value.</param>
-        /// <returns>The value of <paramref name="field"/>.</returns>
-        protected T Get<T>(ref T field)
-        {
-            _dataLock.EnterReadLock();
-            try
-            {
-                return field;
-            }
-            finally
-            {
-                _dataLock.ExitReadLock();
-            }
+            base.OnPropertyChanged(propertyName);
         }
     }
 }
