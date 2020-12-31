@@ -2,27 +2,25 @@
 ; Use Windows Task Scheduler to run task on startup or login. Run the AHK executable with the path
 ; to this script as the only startup argument.
 
-; CTRL+SHIFT+T
-; Sends a formatted local and global timestamp, then ENTER and TAB.
-; Used to create logbooks with Microsoft OneNote.
-^+t::
-FormatTime, LocalDate, %A_Now%, yyyy-MM-dd
-FormatTime, LocalTime, %A_Now%, HH:mm
+; CTRL+ALT+Z
+; Sends an ISO 8601 timestamp (e.g. 2020-12-31T12:27Z).
+^!z::
 FormatTime, UtcNow, %A_NowUTC%, yyyy-MM-ddTHH:mmZ
-Send, %LocalDate%T^b%LocalTime% %A_DDD%^b ^i^=%UtcNow%^=^i{ENTER}{TAB}
+Send, %UtcNow%
 return
 
-; CTRL+SHIFT+ENTER
-; Sends ENTER twice, then TAB twice.
-; Used to create logbooks with Microsoft OneNote.
-^+ENTER::
-Send, {ENTER}{ENTER}+{TAB}+{TAB}
+; CTRL+ALT+D
+; Sends a local short date and time (e.g. 'Thu Dec 31 12:25').
+^!d::
+FormatTime, LocalNow, %A_Now%, ddd MMM dd HH:mm
+Send, %LocalNow%
 return
 
-; CTRL+SHIFT+H
-; Sends a random 8-character alphanumeric string.
-^+h::
-loop 8
+; CTRL+ALT+X
+; Sends a random 6-character alphanumeric string.
+^!x::
+Result =
+loop 6
 {
     Random, Toggle, 0, 1
     if Toggle = 1
@@ -35,4 +33,5 @@ loop 8
 }
 
 Send, %Result%
+Result =
 return
