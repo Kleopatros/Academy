@@ -30,12 +30,22 @@ fi
 
 eval "$(rbenv init -)"
 
-export PATH="/usr/local/opt/postgresql@9.6/bin:$PATH"
+export PYENV_ROOT="$HOME/.pyenv"
+command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
+eval "$(pyenv virtualenv-init -)"
+
+export PATH="/usr/local/opt/postgresql@11/bin:$PATH"
+export LDFLAGS="-L/usr/local/opt/postgresql@11/lib"
+export CPPFLAGS="-I/usr/local/opt/postgresql@11/include"
+export PKG_CONFIG_PATH="/usr/local/opt/postgresql@11/lib/pkgconfig"
 
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
-if command -v pyenv 1>/dev/null 2>&1; then
-  eval "$(pyenv init -)"
-fi
+export NPM_TOKEN="6f6afe96-27b0-4860-8c94-c53619cf9011"
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+export AWS_PROFILE="fe-alpha"
